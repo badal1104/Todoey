@@ -11,10 +11,17 @@ import UIKit
 class TodoListViewController: UITableViewController {
 
     var itemArray = ["1","2","3"]
+    let user_Default = UserDefaults.standard
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         UIApplication.shared.statusBarStyle = .lightContent
+        
+        if let userDeffaultArray = user_Default.value(forKey: "ToDoListArray") {
+            itemArray = userDeffaultArray as! Array
+        }
+        
         // Do any additional setup after loading the view, typically from a nib.
     }
     
@@ -53,6 +60,9 @@ class TodoListViewController: UITableViewController {
             if addItemField?.text != "" {
                 self.itemArray.append((addItemField?.text)!)
                 self.tableView.reloadData()
+                
+                self.user_Default.set(self.itemArray, forKey: "ToDoListArray")
+                
             }
             print((addItemField?.text)!)
 
