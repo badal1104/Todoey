@@ -10,7 +10,7 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
 
-    let itemArray = ["1","2","3"]
+    var itemArray = ["1","2","3"]
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,7 +18,7 @@ class TodoListViewController: UITableViewController {
         // Do any additional setup after loading the view, typically from a nib.
     }
     
-    //Mark: UITableViewDelegates & DataSources
+    //MARK:- UITableViewDelegates & DataSources
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
@@ -40,9 +40,33 @@ class TodoListViewController: UITableViewController {
         else {
             cell?.accessoryType = .checkmark
         }
+    }
+    
+    //MARK:- UiBarButton Action
+    
+    @IBAction func addButtonPressed(_ sender : UIBarButtonItem) {
+        
+        let alert = UIAlertController.init(title: "Add New Todo Item", message: nil, preferredStyle: .alert)
+        
+        let action = UIAlertAction.init(title: "Add Item", style: .default) { (action) in
+            let addItemField =  alert.textFields?.last
+            if addItemField?.text != "" {
+                self.itemArray.append((addItemField?.text)!)
+                self.tableView.reloadData()
+            }
+            print((addItemField?.text)!)
+
+          
+        }
+        alert.addAction(action)
+        alert.addTextField { (alertTextfiled) in
+            alertTextfiled.placeholder = "Create New Item"
+        }
+        present(alert, animated: true, completion: nil)
         
         
     }
+    
     
 }
 
