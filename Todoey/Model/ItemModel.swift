@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ItemModel: NSObject {
+class ItemModel: NSObject,Codable {
 
     var title = ""
     var done = false
