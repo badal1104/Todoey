@@ -7,18 +7,17 @@
 //
 
 import UIKit
-
+import CoreData
 class TodoListViewController: UITableViewController {
     
-    var itemArray = [ItemModel]()
-    let user_Default = UserDefaults.standard
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
-    
+    var itemArray = [Item]()
+    let managedObjectContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    @IBOutlet weak var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         UIApplication.shared.statusBarStyle = .lightContent
-        decodeData()
+        loadData()
         // Do any additional setup after loading the view, typically from a nib.
     }
     
@@ -40,7 +39,9 @@ class TodoListViewController: UITableViewController {
         
         let modelData = itemArray[indexPath.row]
         modelData.done = !modelData.done
-        encodeData()
+       // managedObjectContext.delete(modelData)
+       // itemArray.remove(at: indexPath.row)
+        saveContext()
         tableView.reloadData()
     }
     
@@ -54,9 +55,11 @@ class TodoListViewController: UITableViewController {
             let addItemField =  alert.textFields?.last
             
             if addItemField?.text != "" {
-                let addItem = ItemModel.init(titleString: (addItemField?.text)!, doneFlag: false)
-                self.itemArray.append(addItem)
-                self.encodeData()
+                let newItem = Item(context: self.managedObjectContext)
+                newItem.title = addItemField?.text
+                newItem.done = false
+                self.itemArray.append(newItem)
+                self.saveContext()
                 self.tableView.reloadData()
             }
             print((addItemField?.text)!)
@@ -69,38 +72,52 @@ class TodoListViewController: UITableViewController {
         
     }
     
-    //MARK:- Encode
+    //MARK:- Save Context
     
-    func encodeData()  {
-        
-        let encoder = PropertyListEncoder()
-        if let data = try?encoder.encode(self.itemArray)  {
+    func saveContext()  {
             do{
-                try data.write(to: self.dataFilePath!)
+                  try managedObjectContext.save()
             }catch {
-                print("Encode error \(error)")
+                print("core data save error \(error)")
             }
-        }
     }
     
-    //MARK:- Decode
+    //MARK:- Load Context
     
-    func decodeData()  {
-        
-        if let fileData = try? Data.init(contentsOf: dataFilePath!) {
-            
-            let decoder = PropertyListDecoder()
-            
-            do{
-                itemArray = try decoder.decode([ItemModel].self, from: fileData)
-            }
-            catch {
-                print("decode error \(error)")
-            }
+    func loadData(with request : NSFetchRequest<Item> = Item.fetchRequest())  {
+        //let fetchRequest : NSFetchRequest = Item.fetchRequest()
+        if let data = try? managedObjectContext.fetch(request) {
+            itemArray = data
+            tableView.reloadData()
         }
     }
-    
-    
-    
 }
 
+//MARK:- UISearchBar delegate
+extension TodoListViewController : UISearchBarDelegate  {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        let fetchRequest : NSFetchRequest = Item.fetchRequest()
+        let predicate = NSPredicate.init(format:"title CONTAINS[cd] %@", searchBar.text!)
+        fetchRequest.predicate = predicate
+        let sortDesciptpr = NSSortDescriptor.init(key: "title", ascending: true)
+        fetchRequest.sortDescriptors = [sortDesciptpr]
+        loadData(with: fetchRequest)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchBar.text?.count == 0 {
+            loadData()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+            
+        }
+        
+        
+    }
+    
+}
