@@ -12,12 +12,18 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     let managedObjectContext = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    var selectedCategory : Category? {
+        didSet{ // call only when selectedCategory gets Value
+            loadData()
+        }
+    }
+    
+    
     @IBOutlet weak var searchBar: UISearchBar!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         UIApplication.shared.statusBarStyle = .lightContent
-        loadData()
         // Do any additional setup after loading the view, typically from a nib.
     }
     
@@ -58,6 +64,7 @@ class TodoListViewController: UITableViewController {
                 let newItem = Item(context: self.managedObjectContext)
                 newItem.title = addItemField?.text
                 newItem.done = false
+                newItem.parentCategory = self.selectedCategory
                 self.itemArray.append(newItem)
                 self.saveContext()
                 self.tableView.reloadData()
@@ -84,13 +91,26 @@ class TodoListViewController: UITableViewController {
     
     //MARK:- Load Context
     
-    func loadData(with request : NSFetchRequest<Item> = Item.fetchRequest())  {
-        //let fetchRequest : NSFetchRequest = Item.fetchRequest()
+    func loadData(with request : NSFetchRequest<Item> = Item.fetchRequest(), andPredicate : NSPredicate? = nil)  {
+        
+        let categoryPredicate = NSPredicate.init(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
+        
+        if andPredicate != nil {
+            let compoundPredicate = NSCompoundPredicate.init(andPredicateWithSubpredicates: [andPredicate!,categoryPredicate])
+            request.predicate = compoundPredicate
+        }
+        else {
+            request.predicate = categoryPredicate
+        }
+        
         if let data = try? managedObjectContext.fetch(request) {
-            itemArray = data
-            tableView.reloadData()
+            if data.count > 0 {
+                itemArray = data
+                tableView.reloadData()
+            }
         }
     }
+    
 }
 
 //MARK:- UISearchBar delegate
@@ -103,14 +123,14 @@ extension TodoListViewController : UISearchBarDelegate  {
         fetchRequest.predicate = predicate
         let sortDesciptpr = NSSortDescriptor.init(key: "title", ascending: true)
         fetchRequest.sortDescriptors = [sortDesciptpr]
-        loadData(with: fetchRequest)
+        loadData(with: fetchRequest, andPredicate: predicate)
+        
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
         if searchBar.text?.count == 0 {
             loadData()
-            
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
             }

@@ -65,6 +65,18 @@ class CategoryViewController: UITableViewController {
         return cell
     }
     
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        performSegue(withIdentifier: "goToItem", sender: self)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        
+        let destination = segue.destination as! TodoListViewController
+        if let selectedIndexPath = tableView.indexPathForSelectedRow{
+            destination.selectedCategory = categoryArray[selectedIndexPath.row]
+        }
+    }
+    
     
     //MARK: - Save and Load Data from CoreData
     
